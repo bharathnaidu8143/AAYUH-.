@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AAYUH! Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to right, #e0f7fa, #ffffff);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header / Navbar */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      background-color: #00796b;
+      color: white;
+    }
+
+    .profile-dropdown {
+      position: relative;
+    }
+    .profile-dropdown span {
+      cursor: pointer;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .profile-dropdown-content {
+      display: none;
+      position: absolute;
+      background-color: white;
+      min-width: 160px;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+      z-index: 1;
+      top: 45px;
+      left: 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .profile-dropdown-content a {
+      color: black;
+      padding: 10px 15px;
+      text-decoration: none;
+      display: block;
+    }
+
+    .profile-dropdown-content a:hover {
+      background-color: #f1f1f1;
+    }
+
+    /* Navbar Links */
+    .navbar {
+      display: flex;
+      align-items: center;
+      gap: 30px;
+    }
+
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .navbar ul {
+      list-style: none;
+      display: flex;
+      gap: 20px;
+      margin: 0;
+      padding: 0;
+    }
+
+    .navbar ul li a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .navbar ul li a:hover {
+      text-decoration: underline;
+    }
+
+    /* Search bar */
+    .search-bar {
+      margin: 30px auto;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      width: 80%;
+    }
+
+    .search-bar input {
+      flex: 1;
+      max-width: 500px;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 25px;
+      border: 2px solid #00796b;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .search-bar input:focus {
+      border-color: #004d40;
+      box-shadow: 0 0 8px rgba(0, 121, 107, 0.3);
+    }
+
+    .search-bar button {
+      padding: 12px 20px;
+      background: #00796b;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+
+    .search-bar button:hover {
+      background: #004d40;
+    }
+
+    /* Cards Section */
+    .main-content {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 40px;
+      flex-wrap: wrap;
+      padding-bottom: 100px;
+    }
+
+    .card {
+      background-color: #ffffff;
+      padding: 20px;
+      border-radius: 15px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      width: 200px;
+      text-align: center;
+      transition: transform 0.3s ease;
+      cursor: pointer;
+    }
+
+    .card:hover {
+      transform: scale(1.05);
+    }
+
+    .card i {
+      font-size: 40px;
+      margin-bottom: 10px;
+      color: #00796b;
+    }
+
+    .card h3 {
+      color: #004d40;
+      font-weight: 600;
+      margin-top: 5px;
+    }
+
+    /* Footer */
+    .footer {
+      background-color: #00796b;
+      color: white;
+      text-align: center;
+      padding: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: auto;
+    }
+
+    @media (max-width: 600px) {
+      .navbar {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .search-bar input {
+        width: 90%;
+      }
+      .main-content {
+        flex-direction: column;
+        align-items: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="profile-dropdown">
+      <span onclick="toggleProfileMenu()"><i class="fas fa-user-circle"></i> Profile</span>
+      <div id="profileMenu" class="profile-dropdown-content">
+        <a href="settings.html">Settings</a>
+        <a href="Contact Us.html">Contact Us</a>
+        <a href="Terms and Conditions.html">Terms and Conditions</a>
+        <a href="about.html">About</a>
+      </div>
+    </div>
+
+    <div class="navbar">
+      <div class="logo">🏥 AAYUH!</div>
+      <ul>
+        <li><a href="dashboard.html">Home</a></li>
+        <li><a href="Medicines.html">Medicines</a></li>
+        <li><a href="Symptoms.html">Symptoms</a></li>
+        <li><a href="disease.html">Disease</a></li>
+        <li><a href="medical history.html">Medical History</a></li>
+        <li><a href="Emergency.html">Emergency</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <!-- Search Bar -->
+  <div class="search-bar">
+    <input type="text" id="globalSearch" placeholder="Search symptoms, medicines, diseases..." />
+    <button onclick="performGlobalSearch()">🔍</button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="card" onclick="window.location.href='Medicines.html'">
+      <i class="fas fa-pills"></i>
+      <h3>Medicines</h3>
+    </div>
+    <div class="card" onclick="window.location.href='Symptoms.html'">
+      <i class="fas fa-stethoscope"></i>
+      <h3>Symptom Checker</h3>
+    </div>
+    <div class="card" onclick="window.location.href='disease.html'">
+      <i class="fas fa-virus"></i>
+      <h3>Diseases</h3>
+    </div>
+    <div class="card" onclick="window.location.href='medical history.html'">
+      <i class="fas fa-notes-medical"></i>
+      <h3>Medical History</h3>
+    </div>
+    <div class="card" onclick="window.location.href='Emergency.html'">
+      <i class="fas fa-ambulance"></i>
+      <h3>Emergency</h3>
+    </div>
+    <div class="card" onclick="openDoctorFinder()">
+      <i class="fas fa-user-md"></i>
+      <h3>Find Doctors</h3>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">India's Health Companion</div>
+
+  <!-- Script -->
+  <script>
+    function toggleProfileMenu() {
+      const menu = document.getElementById('profileMenu');
+      menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    }
+
+    window.onclick = function(e) {
+      if (!e.target.closest('.profile-dropdown')) {
+        document.getElementById('profileMenu').style.display = 'none';
+      }
+    }
+
+    function performGlobalSearch() {
+      const term = document.getElementById("globalSearch").value.trim().toLowerCase();
+      if (!term) {
+        alert("Please enter a symptom, medicine, or disease to search.");
+        return;
+      }
+      alert("Searching for: " + term);
+    }
+
+    function openDoctorFinder() {
+      alert("Doctor Finder feature coming soon!");
+    }
+  </script>
+</body>
+</html>

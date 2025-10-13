@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Disease Info Lookup</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #eef2f3;
+    }
+    h1 {
+      color: #333;
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: 250px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      margin-left: 10px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+    }
+    .disclaimer {
+      margin-top: 10px;
+      font-size: 0.9em;
+      color: #888;
+    }
+    .map-buttons {
+      margin-top: 15px;
+    }
+    .map-buttons button {
+      background-color: #007bff;
+      margin-right: 10px;
+    }
+    .map-buttons button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🩺 Disease Info Lookup</h1>
+  <input type="text" id="diseaseInput" placeholder="Enter disease name...">
+  <button onclick="lookupDisease()">Search</button>
+  <div style="margin-top: 10px;">
+    <a href="dashboard.html" style="color: #28a745; text-decoration: none;">← Back to Dashboard</a>
+  </div>
+
+  <div class="info-box" id="infoBox">
+    <p>Type a disease name and click "Search" to view details.</p>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVZNBKutvRFrQOFQunVgSBwJFLMvrct0Q",
+      authDomain: "aayuh-c9a87.firebaseapp.com",
+      projectId: "aayuh-c9a87",
+      storageBucket: "aayuh-c9a87.firebasestorage.app",
+      messagingSenderId: "459370049467",
+      appId: "1:459370049467:web:4354a11c6b43d3f6dede9e",
+      measurementId: "G-GNFKCBES0L"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Check authentication
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+      }
+    });
+
+    const diseaseData = {
+      diabetes: {
+        symptoms: ["Frequent urination", "Excessive thirst", "Fatigue", "Blurred vision"],
+        diet: ["Whole grains", "Leafy greens", "Low-fat dairy", "Lean proteins"],
+        dos: ["Monitor blood sugar", "Exercise regularly", "Stay hydrated"],
+        donts: ["Avoid sugary foods", "Limit refined carbs", "Don't skip meals"]
+      },
+      hypertension: {
+        symptoms: ["Headaches", "Dizziness", "Shortness of breath", "Nosebleeds"],
+        diet: ["Low-sodium foods", "Fruits and vegetables", "Whole grains"],
+        dos: ["Check BP regularly", "Reduce stress", "Limit alcohol"],
+        donts: ["Avoid salty snacks", "Don't smoke", "Limit caffeine"]
+      },
+      asthma: {
+        symptoms: ["Wheezing", "Coughing", "Chest tightness", "Shortness of breath"],
+        diet: ["Vitamin C-rich foods", "Omega-3 fatty acids", "Magnesium-rich foods"],
+        dos: ["Use inhaler as prescribed", "Avoid triggers", "Stay active"],
+        donts: ["Avoid smoke", "Don't ignore symptoms", "Limit cold air exposure"]
+      }
+    };
+
+    // Check for search parameter from dashboard
+    window.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchParam = urlParams.get('search');
+      if (searchParam) {
+        document.getElementById('diseaseInput').value = searchParam;
+        lookupDisease();
+      }
+    });
+
+    function lookupDisease() {
+      const input = document.getElementById("diseaseInput").value.trim().toLowerCase();
+      const infoBox = document.getElementById("infoBox");
+
+      if (diseaseData[input]) {
+        const data = diseaseData[input];
+        infoBox.innerHTML = `
+          <h2>${input.charAt(0).toUpperCase() + input.slice(1)}</h2>
+          <strong>Symptoms:</strong>
+          <ul>${data.symptoms.map(s => `<li>${s}</li>`).join("")}</ul>
+          <strong>Recommended Diet:</strong>
+          <ul>${data.diet.map(d => `<li>${d}</li>`).join("")}</ul>
+          <strong>Dos:</strong>
+          <ul>${data.dos.map(d => `<li>${d}</li>`).join("")}</ul>
+          <strong>Don'ts:</strong>
+          <ul>${data.donts.map(d => `<li>${d}</li>`).join("")}</ul>
+          <div class="map-buttons">
+            <button onclick="openMaps('${input} hospital')">Nearby ${input} Hospitals</button>
+            <button onclick="openMaps('${input} doctor')">Nearby ${input} Doctors</button>
+          </div>
+          <p class="disclaimer">⚠️ Disclaimer: This information is for educational purposes only and should not replace professional medical advice. Always consult a healthcare provider for diagnosis and treatment.</p>
+        `;
+      } else {
+        infoBox.innerHTML = `<p>❌ Sorry, no data found for "<strong>${input}</strong>". Please check the spelling or try another disease.</p>`;
+      }
+    }
+
+    function openMaps(query) {
+      const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(query)}/`;
+      window.open(mapsUrl, "_blank");
+    }
+  </script>
+
+</body>
+</html>

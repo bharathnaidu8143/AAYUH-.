@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Symptom Checker</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      font-family: 'Segoe UI', sans-serif; 
+      margin: 40px; 
+      background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    }
+    h2 {
+      color: #00796b;
+      margin-bottom: 20px;
+    }
+    input, button { 
+      padding: 12px; 
+      width: 400px; 
+      margin-top: 10px; 
+      border: 2px solid #00796b;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #00796b;
+      color: white;
+      cursor: pointer;
+      width: auto;
+      padding: 12px 20px;
+    }
+    button:hover {
+      background: #004d40;
+    }
+    #result { 
+      margin-top: 20px; 
+      font-weight: bold; 
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    #disclaimer { 
+      margin-top: 30px; 
+      font-size: 0.9em; 
+      color: #666;
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 5px solid #ffc107;
+    }
+    .disease { 
+      margin-bottom: 15px; 
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #00796b;
+    }
+    .back-link {
+      margin-bottom: 20px;
+    }
+    .back-link a {
+      color: #00796b;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="back-link">
+    <a href="dashboard.html">← Back to Dashboard</a>
+  </div>
+
+  <h2>🩺 Symptom Checker</h2>
+  <p>Enter symptoms separated by commas (e.g., fever, cold):</p>
+  <input type="text" id="symptomsInput" placeholder="Type symptoms here..." />
+  <button onclick="checkDisease()">Check Symptoms</button>
+
+  <div id="result"></div>
+  <div id="disclaimer">
+    ⚠️ This tool is for informational purposes only and does not replace professional medical advice. Always consult a doctor for accurate diagnosis and treatment.
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVZNBKutvRFrQOFQunVgSBwJFLMvrct0Q",
+      authDomain: "aayuh-c9a87.firebaseapp.com",
+      projectId: "aayuh-c9a87",
+      storageBucket: "aayuh-c9a87.firebasestorage.app",
+      messagingSenderId: "459370049467",
+      appId: "1:459370049467:web:4354a11c6b43d3f6dede9e",
+      measurementId: "G-GNFKCBES0L"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    // Check authentication
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+      }
+    });
+
+    const diseaseDatabase = [
+      { code: "D001", name: "COVID-19", symptoms: ["fever", "cough", "fatigue", "loss of taste", "shortness of breath"] },
+      { code: "D002", name: "Typhoid", symptoms: ["fever", "chills", "sweating", "headache", "abdominal pain"] },
+      { code: "D003", name: "Dengue", symptoms: ["fever", "rash", "joint pain", "headache", "muscle pain"] },
+      { code: "D004", name: "Malaria", symptoms: ["fever", "chills", "sweating", "nausea", "vomiting"] },
+      { code: "D005", name: "Polio", symptoms: ["fever", "fatigue", "headache", "stiff neck", "muscle weakness"] },
+      { code: "D006", name: "Influenza", symptoms: ["fever", "cough", "sore throat", "body ache", "fatigue"] },
+      { code: "D007", name: "Tuberculosis", symptoms: ["cough", "weight loss", "fever", "night sweats", "fatigue"] },
+      { code: "D008", name: "Chikungunya", symptoms: ["fever", "joint pain", "rash", "headache", "muscle pain"] },
+      { code: "D009", name: "Pneumonia", symptoms: ["fever", "cough", "shortness of breath", "chest pain", "fatigue"] },
+      { code: "D010", name: "Hepatitis A", symptoms: ["fever", "fatigue", "loss of appetite", "nausea", "jaundice"] },
+      { code: "D011", name: "Hepatitis B", symptoms: ["abdominal pain", "dark urine", "joint pain", "jaundice", "fatigue"] },
+      { code: "D012", name: "Asthma", symptoms: ["shortness of breath", "wheezing", "cough", "chest tightness"] },
+      { code: "D013", name: "Bronchitis", symptoms: ["cough", "mucus", "fatigue", "shortness of breath", "chest discomfort"] },
+      { code: "D014", name: "Sinusitis", symptoms: ["facial pain", "nasal congestion", "headache", "fever", "cough"] },
+      { code: "D015", name: "Chickenpox", symptoms: ["fever", "rash", "itching", "fatigue", "loss of appetite"] },
+      { code: "D016", name: "Measles", symptoms: ["fever", "rash", "cough", "runny nose", "red eyes"] },
+      { code: "D017", name: "Mumps", symptoms: ["fever", "swollen glands", "headache", "muscle aches", "fatigue"] },
+      { code: "D018", name: "Tonsillitis", symptoms: ["sore throat", "fever", "difficulty swallowing", "swollen tonsils"] },
+      { code: "D019", name: "Appendicitis", symptoms: ["abdominal pain", "fever", "nausea", "vomiting", "loss of appetite"] },
+      { code: "D020", name: "Gastroenteritis", symptoms: ["diarrhea", "vomiting", "abdominal cramps", "fever", "dehydration"] },
+      { code: "D021", name: "Migraine", symptoms: ["headache", "nausea", "sensitivity to light", "vomiting", "blurred vision"] },
+      { code: "D022", name: "Hypertension", symptoms: ["headache", "dizziness", "blurred vision", "chest pain", "fatigue"] },
+      { code: "D023", name: "Diabetes", symptoms: ["frequent urination", "increased thirst", "fatigue", "blurred vision"] },
+      { code: "D024", name: "Anemia", symptoms: ["fatigue", "pale skin", "shortness of breath", "dizziness", "cold hands"] },
+      { code: "D025", name: "Urinary Tract Infection", symptoms: ["burning sensation", "frequent urination", "cloudy urine", "pelvic pain"] }
+    ];
+
+    // Check for search parameter from dashboard
+    window.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const searchParam = urlParams.get('search');
+      if (searchParam) {
+        document.getElementById('symptomsInput').value = searchParam;
+        checkDisease();
+      }
+    });
+
+    function checkDisease() {
+      const input = document.getElementById("symptomsInput").value.toLowerCase();
+      const userSymptoms = input.split(",").map(s => s.trim());
+
+      let matches = [];
+
+      diseaseDatabase.forEach(disease => {
+        const matchCount = disease.symptoms.filter(symptom =>
+          userSymptoms.includes(symptom.toLowerCase())
+        ).length;
+
+        if (matchCount >= 2) {
+          matches.push(
+            `<div class="disease">🧾 <strong>${disease.name}</strong> 
+            <br>🧬 Code: ${disease.code} 
+            <br>🩺 Symptoms: ${disease.symptoms.join(", ")}</div>`
+          );
+        }
+      });
+
+      const resultDiv = document.getElementById("result");
+      if (matches.length > 0) {
+        resultDiv.innerHTML = "<h3>Possible Conditions:</h3>" + matches.join("");
+      } else {
+        resultDiv.innerHTML = "No strong matches found. Please consult a healthcare professional.";
+      }
+    }
+  </script>
+</body>
+</html>
