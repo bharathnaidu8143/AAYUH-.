@@ -85,15 +85,15 @@
       background: #ccc;
       cursor: not-allowed;
     }
-    .back-link {
+    .back-link, .download-link {
       margin-top: 1rem;
     }
-    .back-link a {
+    .back-link a, .download-link a {
       color: #00796b;
       text-decoration: none;
       font-weight: 500;
     }
-    .back-link a:hover {
+    .back-link a:hover, .download-link a:hover {
       text-decoration: underline;
     }
     .login-link {
@@ -145,6 +145,12 @@
     <div class="back-link">
       <a href="home.html">← Back to Home</a>
     </div>
+    <!-- Download button -->
+    <div class="download-link">
+      <a href="downloads/AAYUH_website.zip" download>
+        Download Website
+      </a>
+    </div>
   </div>
 </div>
 
@@ -169,16 +175,12 @@
   document.getElementById("loginBtn").addEventListener("click", () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
-
-    // Clear previous messages
     document.getElementById("errorMsg").textContent = "";
     document.getElementById("successMsg").textContent = "";
-
     if (!email || !password) {
       document.getElementById("errorMsg").textContent = "Please enter both email and password.";
       return;
     }
-
     auth.signInWithEmailAndPassword(email, password)
       .then(() => {
         document.getElementById("successMsg").textContent = "Login successful! Redirecting...";
@@ -191,43 +193,33 @@
       });
   });
 
-  // Forgot Password functionality
   document.getElementById("forgotPasswordLink").addEventListener("click", (e) => {
     e.preventDefault();
     const email = document.getElementById("email").value;
-    
     if (!email) {
       document.getElementById("errorMsg").textContent = "Please enter your email address first.";
       return;
     }
-
-    // Clear previous messages
     document.getElementById("errorMsg").textContent = "";
     document.getElementById("successMsg").textContent = "";
-
     auth.sendPasswordResetEmail(email)
       .then(() => {
-        document.getElementById("successMsg").textContent = "Password reset email sent! Check your inbox and follow the instructions.";
+        document.getElementById("successMsg").textContent = "Password reset email sent! Check your inbox.";
       })
       .catch(error => {
         document.getElementById("errorMsg").textContent = "Error: " + error.message;
       });
   });
 
-  // Enter key support
   document.addEventListener("keypress", function(e) {
     if (e.key === "Enter") {
       document.getElementById("loginBtn").click();
     }
   });
 
-  // Check if user is already logged in (but don't auto-redirect)
   auth.onAuthStateChanged(user => {
     if (user) {
-      // Only redirect if user is already authenticated
       console.log("User already logged in:", user.email);
-      // Comment out auto-redirect to allow manual login testing
-      // window.location.href = "dashboard.html";
     } else {
       console.log("No user logged in, showing login form");
     }
