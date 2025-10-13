@@ -3,7 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <title>Login - AAYUH!</title>
+
+  <!-- Prevent caching of the HTML page -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Your CSS with cache-busting -->
+  <link rel="stylesheet" href="style.css?v=1.0">
+
   <style>
     body { 
       font-family: 'Segoe UI', sans-serif; 
@@ -145,10 +155,10 @@
     <div class="back-link">
       <a href="home.html">← Back to Home</a>
     </div>
-    <!-- Download button -->
+    <!-- Download button with icon -->
     <div class="download-link">
       <a href="downloads/AAYUH_website.zip" download>
-        Download Website
+        <i class="fas fa-download" style="margin-right:8px;"></i> Download Website
       </a>
     </div>
   </div>
@@ -157,6 +167,9 @@
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+<!-- Your JS with cache-busting -->
+<script src="script.js?v=1.0"></script>
 
 <script>
   const firebaseConfig = {
