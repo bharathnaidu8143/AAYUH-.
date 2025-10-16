@@ -184,6 +184,13 @@
   
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
+  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+    .then(() => {
+      console.log("✅ Persistent login enabled.");
+    })
+    .catch((error) => {
+      console.error("Persistence error:", error.message);
+    });
 
   document.getElementById("loginBtn").addEventListener("click", () => {
     const email = document.getElementById("email").value;
