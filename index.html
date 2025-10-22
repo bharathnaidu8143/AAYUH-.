@@ -143,6 +143,58 @@
     .update-popup button:hover {
       background: #e0f7fa;
     }
+
+    /* Forgot password popup */
+    .popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      justify-content: center;
+      align-items: center;
+      z-index: 2000;
+    }
+    .popup-content {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      width: 320px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .popup-content h3 {
+      margin-bottom: 10px;
+      color: #00796b;
+    }
+    .popup-content input {
+      width: 90%;
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1.5px solid #ccc;
+    }
+    .popup-content button {
+      width: 45%;
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      margin: 5px;
+    }
+    .close-btn {
+      background: #ccc;
+      color: black;
+    }
+    .send-btn {
+      background: #00796b;
+      color: white;
+    }
+
     @media (max-width: 768px) {
       .login-container {
         flex-direction: column;
@@ -170,22 +222,38 @@
     <input type="email" id="email" placeholder="Email" required>
     <input type="password" id="password" placeholder="Password" required>
     <button id="loginBtn">Login</button>
+
+    <!-- Forgot password link -->
     <div style="margin: 10px 0;">
       <a href="#" id="forgotPasswordLink" style="color: #00796b; text-decoration: none; font-size: 14px;">Forgot Password?</a>
     </div>
+
     <p id="errorMsg" style="color:red; margin-top: 10px;"></p>
     <p id="successMsg" style="color:green; margin-top: 10px;"></p>
+
     <div class="login-link">
       Don't have an account? <a href="register.html">Sign up here</a>
     </div>
     <div class="back-link">
       <a href="home.html">← Back to Home</a>
     </div>
-    <!-- Download button -->
     <div class="download-link">
       <a href="downloads/AAYUH_website.zip" download>
         <i class="fas fa-download" style="margin-right:8px;"></i> Download Website
       </a>
+    </div>
+  </div>
+</div>
+
+<!-- Forgot Password Popup -->
+<div class="popup" id="forgotPopup">
+  <div class="popup-content">
+    <h3>Reset Password</h3>
+    <p>Enter your registered email:</p>
+    <input type="email" id="resetEmail" placeholder="Your Email" required>
+    <div>
+      <button class="close-btn" id="closePopup">Cancel</button>
+      <button class="send-btn" id="sendReset">Send Link</button>
     </div>
   </div>
 </div>
@@ -218,6 +286,7 @@
     .then(() => console.log("✅ Persistent login enabled."))
     .catch(error => console.error("Persistence error:", error.message));
 
+  // 🔹 Login logic
   document.getElementById("loginBtn").addEventListener("click", () => {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
@@ -241,31 +310,42 @@
       });
   });
 
-  document.getElementById("forgotPasswordLink").addEventListener("click", (e) => {
+  // 🔹 Forgot password popup logic
+  const forgotPopup = document.getElementById("forgotPopup");
+  document.getElementById("forgotPasswordLink").addEventListener("click", e => {
     e.preventDefault();
-    const email = document.getElementById("email").value;
-    const errorMsg = document.getElementById("errorMsg");
-    const successMsg = document.getElementById("successMsg");
-    if (!email) {
-      errorMsg.textContent = "Please enter your email address first.";
-      return;
-    }
-    errorMsg.textContent = "";
-    successMsg.textContent = "";
-    auth.sendPasswordResetEmail(email)
-      .then(() => successMsg.textContent = "Password reset email sent! Check your inbox.")
-      .catch(error => errorMsg.textContent = "Error: " + error.message);
+    forgotPopup.style.display = "flex";
+  });
+  document.getElementById("closePopup").addEventListener("click", () => forgotPopup.style.display = "none");
+
+  // 🔹 Send reset link
+  document.getElementById("sendReset").addEventListener("click", () => {
+    const resetEmail = document.getElementById("resetEmail").value;
+    if (!resetEmail) return alert("Please enter your email address.");
+
+    auth.sendPasswordResetEmail(resetEmail)
+      .then(() => {
+        alert("✅ Password reset link sent! Please check your inbox.");
+        forgotPopup.style.display = "none";
+      })
+      .catch(error => alert("❌ " + error.message));
   });
 
+  // 🔹 Allow Enter key to trigger login
   document.addEventListener("keypress", (e) => {
     if (e.key === "Enter") document.getElementById("loginBtn").click();
   });
 
+  // ✅ User state check (no auto-redirect)
   auth.onAuthStateChanged(user => {
-    if (user) console.log("User logged in:", user.email);
+    if (user) {
+      console.log("User already logged in:", user.email);
+    } else {
+      console.log("No user logged in, showing login form");
+    }
   });
 
-  // ✅ Service Worker registration and update detection
+  // ✅ Service Worker registration & updates
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('service-worker.js').then(reg => {
       console.log("Service Worker registered ✅");
