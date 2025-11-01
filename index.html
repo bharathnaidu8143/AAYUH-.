@@ -337,13 +337,17 @@
   });
 
   // ✅ User state check (no auto-redirect)
+  // ✅ Auto-login user if session exists
   auth.onAuthStateChanged(user => {
-    if (user) {
-      console.log("User already logged in:", user.email);
-    } else {
-      console.log("No user logged in, showing login form");
-    }
-  });
+   if (user) {
+     console.log("Auto-login:", user.email);
+    // Redirect directly if already logged in
+     window.location.href = "dashboard.html";
+   } else {
+     console.log("Please log in.");
+   }
+ });
+
 
   // ✅ Service Worker registration & updates
   if ('serviceWorker' in navigator) {
