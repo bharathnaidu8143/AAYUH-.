@@ -18,20 +18,65 @@
 
     /* Header */
     header {
-      background-color: #00796b;
-      color: white;
-      padding: 10px 20px 0;
-      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
+      background-color: #00796b;
+      color: white;
+      padding: 10px 20px;
+      position: relative;
     }
 
-    /* Profile dropdown */
+    /* Logo */
+    .logo {
+      font-size: 26px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* Navbar - always horizontal and scrollable */
+    .navbar-container {
+      width: 100%;
+      overflow-x: auto;
+      white-space: nowrap;
+      background-color: #00796b;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .navbar-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .navbar {
+      display: inline-flex;
+      gap: 25px;
+      justify-content: center;
+      align-items: center;
+      padding: 10px 20px;
+    }
+
+    .navbar a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+      font-size: 16px;
+      transition: 0.3s;
+      display: inline-block;
+    }
+
+    .navbar a:hover {
+      text-decoration: underline;
+    }
+
+    /* Profile Dropdown (Left side) */
     .profile-dropdown {
       position: absolute;
       left: 20px;
-      top: 10px;
+      top: 15px;
     }
 
     .profile-dropdown span {
@@ -44,7 +89,7 @@
     }
 
     .profile-dropdown i {
-      font-size: 28px; /* Larger profile icon */
+      font-size: 30px; /* Increased Profile Icon Size */
     }
 
     .profile-dropdown-content {
@@ -54,7 +99,7 @@
       min-width: 160px;
       box-shadow: 0 8px 16px rgba(0,0,0,0.2);
       z-index: 1;
-      top: 40px;
+      top: 45px;
       left: 0;
       border-radius: 8px;
       overflow: hidden;
@@ -69,51 +114,6 @@
 
     .profile-dropdown-content a:hover {
       background-color: #f1f1f1;
-    }
-
-    /* Logo */
-    .logo {
-      font-size: 26px;
-      font-weight: bold;
-      margin: 10px 0;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    /* Scrollable navbar */
-    .navbar-container {
-      width: 100%;
-      overflow-x: auto;
-      overflow-y: hidden;
-      white-space: nowrap;
-      background-color: #00796b;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .navbar-container::-webkit-scrollbar {
-      display: none;
-    }
-
-    .navbar {
-      display: inline-flex;
-      gap: 25px;
-      padding: 10px 20px;
-    }
-
-    .navbar a {
-      color: white;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 16px;
-      display: inline-block;
-      transition: color 0.3s ease;
-    }
-
-    .navbar a:hover {
-      text-decoration: underline;
-      color: #c8fff4;
     }
 
     /* Search bar */
@@ -206,7 +206,7 @@
       margin-top: auto;
     }
 
-    /* Mobile adjustments */
+    /* Mobile view adjustments */
     @media (max-width: 768px) {
       .logo {
         font-size: 22px;
@@ -217,7 +217,11 @@
       }
 
       .profile-dropdown i {
-        font-size: 24px;
+        font-size: 28px;
+      }
+
+      .navbar {
+        gap: 15px;
       }
 
       .card {
@@ -251,6 +255,7 @@
 
     <div class="logo">🏥 AAYUH!</div>
 
+    <!-- Scrollable Navbar -->
     <div class="navbar-container">
       <nav class="navbar">
         <a href="dashboard.html">Home</a>
