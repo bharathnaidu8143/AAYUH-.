@@ -18,30 +18,20 @@
 
     /* Header */
     header {
+      background-color: #00796b;
+      color: white;
+      padding: 10px 20px 0;
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-color: #00796b;
-      color: white;
-      padding: 10px 20px;
-      position: relative;
     }
 
-    /* Logo */
-    .logo {
-      font-size: 26px;
-      font-weight: bold;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    /* Profile Dropdown (Left side) */
+    /* Profile dropdown */
     .profile-dropdown {
       position: absolute;
       left: 20px;
-      top: 12px;
+      top: 10px;
     }
 
     .profile-dropdown span {
@@ -54,7 +44,7 @@
     }
 
     .profile-dropdown i {
-      font-size: 26px; /* Bigger profile icon */
+      font-size: 28px; /* Larger profile icon */
     }
 
     .profile-dropdown-content {
@@ -81,27 +71,35 @@
       background-color: #f1f1f1;
     }
 
-    /* Navbar (Horizontal + scrollable on mobile) */
+    /* Logo */
+    .logo {
+      font-size: 26px;
+      font-weight: bold;
+      margin: 10px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Scrollable navbar */
     .navbar-container {
       width: 100%;
       overflow-x: auto;
+      overflow-y: hidden;
       white-space: nowrap;
-      scrollbar-width: none; /* hide scrollbar for Firefox */
-      -ms-overflow-style: none; /* hide scrollbar for IE */
+      background-color: #00796b;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
 
     .navbar-container::-webkit-scrollbar {
-      display: none; /* hide scrollbar for Chrome/Safari */
+      display: none;
     }
 
     .navbar {
       display: inline-flex;
-      justify-content: center;
-      align-items: center;
       gap: 25px;
-      padding: 10px 0;
-      width: max-content;
-      min-width: 100%;
+      padding: 10px 20px;
     }
 
     .navbar a {
@@ -109,13 +107,13 @@
       text-decoration: none;
       font-weight: bold;
       font-size: 16px;
-      padding: 8px 10px;
-      transition: 0.3s;
       display: inline-block;
+      transition: color 0.3s ease;
     }
 
     .navbar a:hover {
       text-decoration: underline;
+      color: #c8fff4;
     }
 
     /* Search bar */
@@ -208,7 +206,7 @@
       margin-top: auto;
     }
 
-    /* Mobile view adjustments */
+    /* Mobile adjustments */
     @media (max-width: 768px) {
       .logo {
         font-size: 22px;
@@ -219,7 +217,7 @@
       }
 
       .profile-dropdown i {
-        font-size: 22px;
+        font-size: 24px;
       }
 
       .card {
@@ -253,7 +251,6 @@
 
     <div class="logo">🏥 AAYUH!</div>
 
-    <!-- Scrollable Navbar Container -->
     <div class="navbar-container">
       <nav class="navbar">
         <a href="dashboard.html">Home</a>
