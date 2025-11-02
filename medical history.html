@@ -1,12 +1,257 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
   <title>Medical History Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Supabase JS -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Firebase SDK v9 (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+
+    // Firebase config (keep as you had)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVZNBKutvRFrQOFQunVgSBwJFLMvrct0Q",
+      authDomain: "aayuh-c9a87.firebaseapp.com",
+      projectId: "aayuh-c9a87",
+      storageBucket: "aayuh-c9a87.firebasestorage.app",
+      messagingSenderId: "459370049467",
+      appId: "1:459370049467:web:4354a11c6b43d3f6dede9e",
+      measurementId: "G-GNFKCBES0L"
+    };
+    initializeApp(firebaseConfig);
+    const auth = getAuth();
+
+    // Supabase global is loaded by external script tag (below). Use window.supabase
+    const SUPABASE_URL = "https://uydieeizijwzsydydbuv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGllZWl6aWp3enN5ZHlkYnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTI3MDUsImV4cCI6MjA3NzU4ODcwNX0.5yCKyxHutcGlbkKwIVjpYAQP17PMLGZIwtmVEplo7YE";
+
+    // Wait until DOM + supabase script loads
+    document.addEventListener('DOMContentLoaded', () => {
+      if (!window.supabase) {
+        console.error("Supabase script not loaded yet.");
+        return;
+      }
+      window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+      // Hook up UI buttons AFTER supabase available
+      const uploadBtn = document.getElementById("uploadBtn");
+      const applyFiltersBtn = document.getElementById("applyFiltersBtn");
+      const clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
+      if (uploadBtn) uploadBtn.addEventListener("click", uploadReport);
+      if (applyFiltersBtn) applyFiltersBtn.addEventListener("click", loadReports);
+      if (clearFiltersBtn) clearFiltersBtn.addEventListener("click", clearFilters);
+
+      // Firebase auth check: if you use Firebase auth in your app, this keeps existing flow
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          window.__userId = user.uid;
+          console.log("User authenticated:", window.__userId);
+          loadReports(); // load for this user
+        } else {
+          console.log("No user authenticated, redirecting to login");
+          // If you still want redirect behavior uncomment next line:
+          // window.location.href = "index.html";
+          // For development/testing we can still allow guest user:
+          window.__userId = localStorage.getItem('uid') || 'guest_user';
+          loadReports();
+        }
+      });
+    });
+
+    // Upload to Supabase storage & insert metadata into table
+    async function uploadReport() {
+      const supabase = window.supabaseClient;
+      if (!supabase) { alert("Supabase not ready"); return; }
+
+      const userId = window.__userId || localStorage.getItem('uid') || 'guest_user';
+
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const doctor = document.getElementById('doctor').value.trim();
+      const date = document.getElementById('reportDate').value;
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+
+      if (!title || !description || !doctor || !date || !file) {
+        alert("⚠️ Please fill all fields and choose a file.");
+        return;
+      }
+
+      const uploadBtn = document.getElementById('uploadBtn');
+      const originalText = uploadBtn.textContent;
+      uploadBtn.textContent = "Uploading...";
+      uploadBtn.disabled = true;
+
+      try {
+        // Build storage path and upload
+        const ext = file.name.split('.').pop();
+        const filePath = `reports/${userId}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const bucketName = 'medical_reports';
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(filePath);
+        const publicUrl = publicData?.publicUrl || '';
+
+        const fileType = file.type && file.type.includes('pdf') ? 'pdf' : 'image';
+
+        // Insert metadata into database table 'medical_history'
+        const timestamp = Date.now();
+        const { error: insertError } = await supabase.from('medical_history').insert([{
+          user_id: userId,
+          title,
+          description,
+          doctor,
+          date,
+          file_url: publicUrl,
+          file_path: filePath,
+          file_type: fileType,
+          timestamp
+        }]);
+
+        if (insertError) throw insertError;
+
+        alert("✅ Report uploaded successfully!");
+
+        // Clear form
+        document.getElementById('title').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('doctor').value = '';
+        document.getElementById('reportDate').value = '';
+        document.getElementById('fileInput').value = '';
+
+        loadReports();
+      } catch (err) {
+        console.error("Upload failed:", err);
+        alert("❌ Upload failed: " + (err.message || JSON.stringify(err)));
+      } finally {
+        uploadBtn.textContent = originalText;
+        uploadBtn.disabled = false;
+      }
+    }
+
+    // Load reports from Supabase (for current user)
+    async function loadReports() {
+      const supabase = window.supabaseClient;
+      if (!supabase) return;
+
+      const userId = window.__userId || localStorage.getItem('uid') || 'guest_user';
+      const reportList = document.getElementById('reportList');
+      if (!reportList) return;
+      reportList.innerHTML = '<div style="text-align: center; padding: 20px;">Loading reports...</div>';
+
+      try {
+        const { data, error } = await supabase
+          .from('medical_history')
+          .select('*')
+          .eq('user_id', userId)
+          .order('timestamp', { ascending: false });
+
+        if (error) throw error;
+
+        // Apply client-side filters (if any)
+        const doctorFilter = document.getElementById('filterDoctor')?.value || '';
+        const dateFilter = document.getElementById('filterDate')?.value || '';
+        const typeFilter = document.getElementById('filterType')?.value || '';
+
+        reportList.innerHTML = '';
+        let hasReports = false;
+
+        (data || []).forEach(row => {
+          if (doctorFilter && row.doctor !== doctorFilter) return;
+          if (dateFilter && row.date !== dateFilter) return;
+          if (typeFilter && row.file_type !== typeFilter) return;
+
+          hasReports = true;
+          const div = document.createElement('div');
+          div.className = 'report-card';
+
+          const thumbnail = row.file_type === "image"
+            ? `<img src="${row.file_url}" class="thumbnail" onerror="this.src='https://via.placeholder.com/300x150?text=Image+Error'">`
+            : `<img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" class="thumbnail">`;
+
+          // Escape values for safety when injecting into inputs/textarea values
+          const safeTitle = (row.title || '').replace(/"/g, "&quot;");
+          const safeDescription = (row.description || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+          div.innerHTML = `
+            ${thumbnail}
+            <input type="text" value="${safeTitle}" onchange="updateField(${row.id}, 'title', this.value)">
+            <textarea onchange="updateField(${row.id}, 'description', this.value)">${safeDescription}</textarea>
+            <p><strong>Doctor:</strong> ${row.doctor || ''}</p>
+            <p><strong>Date:</strong> ${row.date || ''}</p>
+            <a href="${row.file_url}" target="_blank" style="color: #00796b; text-decoration: none;">📄 View File</a>
+            <div class="actions">
+              <button onclick="deleteReport(${row.id}, '${row.file_path}')" style="background: #e74c3c;">Delete</button>
+            </div>
+          `;
+          reportList.appendChild(div);
+        });
+
+        if (!hasReports) {
+          reportList.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No medical reports found. Upload your first report above!</div>';
+        }
+      } catch (err) {
+        console.error("Error loading reports:", err);
+        reportList.innerHTML = '<div style="text-align: center; padding: 20px; color: #e74c3c;">Error loading reports. Please try again.</div>';
+      }
+    }
+
+    // Update a field in DB
+    async function updateField(id, field, value) {
+      try {
+        const supabase = window.supabaseClient;
+        const { error } = await supabase.from('medical_history').update({ [field]: value }).eq('id', id);
+        if (error) throw error;
+        console.log("Field updated successfully");
+      } catch (err) {
+        console.error("Error updating field:", err);
+        alert("❌ Failed to update: " + (err.message || JSON.stringify(err)));
+      }
+    }
+
+    // Delete report: removes file from storage and DB row
+    async function deleteReport(id, filePath) {
+      if (!confirm("Are you sure you want to delete this report?")) return;
+      try {
+        const supabase = window.supabaseClient;
+        const bucketName = 'medical_reports';
+        if (filePath) {
+          const { error: removeErr } = await supabase.storage.from(bucketName).remove([filePath]);
+          if (removeErr) console.warn("Storage remove error (maybe already removed):", removeErr);
+        }
+        const { error: delErr } = await supabase.from('medical_history').delete().eq('id', id);
+        if (delErr) throw delErr;
+        alert("🗑️ Report deleted successfully!");
+        loadReports();
+      } catch (err) {
+        console.error("Delete error:", err);
+        alert("❌ Failed to delete: " + (err.message || JSON.stringify(err)));
+      }
+    }
+
+    function clearFilters() {
+      document.getElementById('filterDoctor').value = '';
+      document.getElementById('filterDate').value = '';
+      document.getElementById('filterType').value = '';
+      loadReports();
+    }
+
+    // Expose for inline handlers
+    window.updateField = updateField;
+    window.deleteReport = deleteReport;
+    window.loadReports = loadReports;
+  </script>
+
+  <!-- Load Supabase (non-module) - make sure this is present so window.supabase exists -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
   <style>
     body { font-family: 'Segoe UI'; background: #f4f6f9; padding: 20px; }
@@ -20,10 +265,10 @@
       border: 1px solid #ccc; border-radius: 5px;
     }
     button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-    .report-list { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+    .report-list { display: flex; flex-wrap: wrap; gap: 20px; }
     .report-card { width: 300px; position: relative; }
     .thumbnail { width: 100%; height: 150px; object-fit: cover; border-radius: 5px; }
-    .actions button { background: #e74c3c; margin-top: 10px; }
+    .actions button { background: #e74c3c; margin-top: 10px; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
     .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
   </style>
 </head>
@@ -34,18 +279,18 @@
       <a href="dashboard.html" style="color: #00796b; text-decoration: none; font-weight: 500;">← Back to Dashboard</a>
     </div>
 
-    <!-- Upload Form -->
+    <!-- Upload Form (same design) -->
     <div class="card">
       <input type="text" id="title" placeholder="Report Title">
       <textarea id="description" placeholder="Description / Prescription"></textarea>
       <input type="text" id="doctor" placeholder="Doctor Name">
       <input type="date" id="reportDate">
-      <!-- 📸 Added camera support -->
+      <!-- Camera + file support (unchanged design placement) -->
       <input type="file" id="fileInput" accept="image/*,application/pdf" capture="environment" />
       <button id="uploadBtn">Upload</button>
     </div>
 
-    <!-- Filters -->
+    <!-- Filters (same layout) -->
     <div class="filter-bar">
       <input type="text" id="filterDoctor" placeholder="Filter by Doctor">
       <input type="date" id="filterDate">
@@ -61,163 +306,5 @@
     <!-- Report List -->
     <div class="report-list" id="reportList"></div>
   </div>
-
-  <script type="module">
-    // ✅ Supabase config (your project)
-    const SUPABASE_URL = "https://uydieeizijwzsydydbuv.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGllZWl6aWp3enN5ZHlkYnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTI3MDUsImV4cCI6MjA3NzU4ODcwNX0.5yCKyxHutcGlbkKwIVjpYAQP17PMLGZIwtmVEplo7YE";
-    
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // ✅ Replace this with your own authentication (e.g., from Firebase or localStorage)
-    const userId = localStorage.getItem("uid") || "guest_user"; // placeholder
-
-    document.getElementById("uploadBtn").addEventListener("click", uploadReport);
-    document.getElementById("applyFiltersBtn").addEventListener("click", loadReports);
-    document.getElementById("clearFiltersBtn").addEventListener("click", clearFilters);
-
-    async function uploadReport() {
-      const title = document.getElementById('title').value.trim();
-      const description = document.getElementById('description').value.trim();
-      const doctor = document.getElementById('doctor').value.trim();
-      const date = document.getElementById('reportDate').value;
-      const file = document.getElementById('fileInput').files[0];
-
-      if (!title || !description || !doctor || !date || !file) {
-        alert("⚠️ Please fill all fields and choose a file.");
-        return;
-      }
-
-      const uploadBtn = document.getElementById('uploadBtn');
-      uploadBtn.textContent = "Uploading...";
-      uploadBtn.disabled = true;
-
-      try {
-        const fileExt = file.name.split('.').pop();
-        const filePath = `reports/${userId}/${Date.now()}.${fileExt}`;
-
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-          .from('medical_reports')
-          .upload(filePath, file, { upsert: true });
-
-        if (error) throw error;
-
-        // Get file public URL
-        const { data: publicUrl } = supabase.storage.from('medical_reports').getPublicUrl(filePath);
-
-        const fileType = file.type.includes("pdf") ? "pdf" : "image";
-
-        // Save metadata in database
-        const { error: insertError } = await supabase
-          .from('medical_history')
-          .insert([{ user_id: userId, title, description, doctor, date, file_url: publicUrl.publicUrl, file_type: fileType }]);
-
-        if (insertError) throw insertError;
-
-        alert("✅ Report uploaded successfully!");
-        clearForm();
-        loadReports();
-      } catch (err) {
-        console.error(err);
-        alert("❌ Upload failed: " + err.message);
-      } finally {
-        uploadBtn.textContent = "Upload";
-        uploadBtn.disabled = false;
-      }
-    }
-
-    async function loadReports() {
-      const reportList = document.getElementById('reportList');
-      reportList.innerHTML = '<div style="text-align:center;padding:20px;">Loading reports...</div>';
-
-      const doctorFilter = document.getElementById('filterDoctor').value.trim();
-      const dateFilter = document.getElementById('filterDate').value;
-      const typeFilter = document.getElementById('filterType').value;
-
-      let query = supabase.from('medical_history').select('*').eq('user_id', userId).order('id', { ascending: false });
-
-      const { data, error } = await query;
-      if (error) {
-        reportList.innerHTML = '<div style="color:#e74c3c;text-align:center;">Error loading reports.</div>';
-        console.error(error);
-        return;
-      }
-
-      reportList.innerHTML = '';
-      const filtered = data.filter(r =>
-        (!doctorFilter || r.doctor.toLowerCase().includes(doctorFilter.toLowerCase())) &&
-        (!dateFilter || r.date === dateFilter) &&
-        (!typeFilter || r.file_type === typeFilter)
-      );
-
-      if (filtered.length === 0) {
-        reportList.innerHTML = '<div style="text-align:center;color:#666;">No reports found.</div>';
-        return;
-      }
-
-      filtered.forEach(report => {
-        const div = document.createElement('div');
-        div.className = 'report-card';
-        const thumbnail = report.file_type === "image"
-          ? `<img src="${report.file_url}" class="thumbnail">`
-          : `<img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" class="thumbnail">`;
-
-        div.innerHTML = `
-          ${thumbnail}
-          <input type="text" value="${report.title}" onchange="updateField(${report.id}, 'title', this.value)">
-          <textarea onchange="updateField(${report.id}, 'description', this.value)">${report.description}</textarea>
-          <p><strong>Doctor:</strong> ${report.doctor}</p>
-          <p><strong>Date:</strong> ${report.date}</p>
-          <a href="${report.file_url}" target="_blank" style="color:#00796b;text-decoration:none;">📄 View File</a>
-          <div class="actions">
-            <button onclick="deleteReport(${report.id}, '${report.file_url}')">Delete</button>
-          </div>
-        `;
-        reportList.appendChild(div);
-      });
-    }
-
-    async function updateField(id, field, value) {
-      const { error } = await supabase.from('medical_history').update({ [field]: value }).eq('id', id);
-      if (error) alert("❌ Update failed: " + error.message);
-    }
-
-    async function deleteReport(id, fileUrl) {
-      if (!confirm("Are you sure you want to delete this report?")) return;
-
-      try {
-        const fileName = fileUrl.split('/').slice(-1)[0];
-        await supabase.storage.from('medical_reports').remove([`reports/${userId}/${fileName}`]);
-        await supabase.from('medical_history').delete().eq('id', id);
-        alert("🗑️ Report deleted successfully!");
-        loadReports();
-      } catch (err) {
-        alert("❌ Delete failed: " + err.message);
-      }
-    }
-
-    function clearFilters() {
-      document.getElementById('filterDoctor').value = '';
-      document.getElementById('filterDate').value = '';
-      document.getElementById('filterType').value = '';
-      loadReports();
-    }
-
-    function clearForm() {
-      document.getElementById('title').value = '';
-      document.getElementById('description').value = '';
-      document.getElementById('doctor').value = '';
-      document.getElementById('reportDate').value = '';
-      document.getElementById('fileInput').value = '';
-    }
-
-    // Make global functions accessible
-    window.updateField = updateField;
-    window.deleteReport = deleteReport;
-
-    // Auto-load
-    loadReports();
-  </script>
 </body>
 </html>
