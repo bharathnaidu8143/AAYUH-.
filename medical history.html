@@ -1,180 +1,222 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AAYUH! - Medical History</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <title>Medical History Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Supabase JS -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0099ff, #00cc99);
-      color: white;
-      text-align: center;
-      margin: 0;
-      padding: 0;
-      min-height: 100vh;
+    body { font-family: 'Segoe UI'; background: #f4f6f9; padding: 20px; }
+    .container { max-width: 800px; margin: auto; }
+    .card, .report-card {
+      background: white; padding: 15px; border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px;
     }
-
-    h1 {
-      margin-top: 20px;
+    input, textarea, select {
+      width: 100%; margin: 8px 0; padding: 10px;
+      border: 1px solid #ccc; border-radius: 5px;
     }
-
-    .upload-container {
-      background: white;
-      color: black;
-      margin: 20px auto;
-      padding: 20px;
-      border-radius: 15px;
-      width: 90%;
-      max-width: 450px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.2);
-    }
-
-    input, textarea, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-
-    button {
-      background-color: #0099ff;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-      transition: background 0.3s;
-    }
-
-    button:hover {
-      background-color: #007acc;
-    }
-
-    .report-list {
-      margin: 20px;
-      text-align: left;
-    }
-
-    .report-card {
-      background: white;
-      color: black;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 10px;
-    }
-
-    .report-card a {
-      color: #0099ff;
-      text-decoration: none;
-      word-break: break-all;
-    }
-
-    .report-card a:hover {
-      text-decoration: underline;
-    }
+    button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+    .report-list { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+    .report-card { width: 300px; position: relative; }
+    .thumbnail { width: 100%; height: 150px; object-fit: cover; border-radius: 5px; }
+    .actions button { background: #e74c3c; margin-top: 10px; }
+    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
-  <h1>🩺 My Medical History</h1>
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2>🩺 Medical History</h2>
+      <a href="dashboard.html" style="color: #00796b; text-decoration: none; font-weight: 500;">← Back to Dashboard</a>
+    </div>
 
-  <div class="upload-container">
-    <h3>Upload New Report</h3>
-    <input type="file" id="fileInput" accept="image/*,application/pdf" capture="environment" />
-    <textarea id="description" placeholder="Description / Prescription"></textarea>
-    <button onclick="uploadReport()">Upload</button>
+    <!-- Upload Form -->
+    <div class="card">
+      <input type="text" id="title" placeholder="Report Title">
+      <textarea id="description" placeholder="Description / Prescription"></textarea>
+      <input type="text" id="doctor" placeholder="Doctor Name">
+      <input type="date" id="reportDate">
+      <!-- 📸 Added camera support -->
+      <input type="file" id="fileInput" accept="image/*,application/pdf" capture="environment" />
+      <button id="uploadBtn">Upload</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <input type="text" id="filterDoctor" placeholder="Filter by Doctor">
+      <input type="date" id="filterDate">
+      <select id="filterType">
+        <option value="">All Types</option>
+        <option value="image">Images</option>
+        <option value="pdf">PDFs</option>
+      </select>
+      <button id="applyFiltersBtn">Apply Filters</button>
+      <button id="clearFiltersBtn">Clear Filters</button>
+    </div>
+
+    <!-- Report List -->
+    <div class="report-list" id="reportList"></div>
   </div>
 
-  <div class="report-list" id="reportList"></div>
+  <script type="module">
+    // ✅ Supabase config (your project)
+    const SUPABASE_URL = "https://uydieeizijwzsydydbuv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGllZWl6aWp3enN5ZHlkYnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTI3MDUsImV4cCI6MjA3NzU4ODcwNX0.5yCKyxHutcGlbkKwIVjpYAQP17PMLGZIwtmVEplo7YE";
+    
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  <script>
-    const supabaseUrl = "https://uydieeizijwzsydydbuv.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV5ZGllZWl6aWp3enN5ZHlkYnV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjIwMTI3MDUsImV4cCI6MjA3NzU4ODcwNX0.5yCKyxHutcGlbkKwIVjpYAQP17PMLGZIwtmVEplo7YE";
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    // ✅ Replace this with your own authentication (e.g., from Firebase or localStorage)
+    const userId = localStorage.getItem("uid") || "guest_user"; // placeholder
 
-    const BUCKET_NAME = "medical_reports"; // Create this in Supabase Storage
+    document.getElementById("uploadBtn").addEventListener("click", uploadReport);
+    document.getElementById("applyFiltersBtn").addEventListener("click", loadReports);
+    document.getElementById("clearFiltersBtn").addEventListener("click", clearFilters);
 
     async function uploadReport() {
-      const fileInput = document.getElementById("fileInput");
-      const description = document.getElementById("description").value || "No description provided";
+      const title = document.getElementById('title').value.trim();
+      const description = document.getElementById('description').value.trim();
+      const doctor = document.getElementById('doctor').value.trim();
+      const date = document.getElementById('reportDate').value;
+      const file = document.getElementById('fileInput').files[0];
 
-      if (!fileInput.files.length) {
-        alert("Please select a file to upload.");
+      if (!title || !description || !doctor || !date || !file) {
+        alert("⚠️ Please fill all fields and choose a file.");
         return;
       }
 
-      const file = fileInput.files[0];
-      const fileName = `${Date.now()}_${file.name}`;
+      const uploadBtn = document.getElementById('uploadBtn');
+      uploadBtn.textContent = "Uploading...";
+      uploadBtn.disabled = true;
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(fileName, file);
+      try {
+        const fileExt = file.name.split('.').pop();
+        const filePath = `reports/${userId}/${Date.now()}.${fileExt}`;
 
-      if (error) {
-        console.error("Upload error:", error);
-        alert("Failed to upload file. Check console for details.");
-        return;
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from('medical_reports')
+          .upload(filePath, file, { upsert: true });
+
+        if (error) throw error;
+
+        // Get file public URL
+        const { data: publicUrl } = supabase.storage.from('medical_reports').getPublicUrl(filePath);
+
+        const fileType = file.type.includes("pdf") ? "pdf" : "image";
+
+        // Save metadata in database
+        const { error: insertError } = await supabase
+          .from('medical_history')
+          .insert([{ user_id: userId, title, description, doctor, date, file_url: publicUrl.publicUrl, file_type: fileType }]);
+
+        if (insertError) throw insertError;
+
+        alert("✅ Report uploaded successfully!");
+        clearForm();
+        loadReports();
+      } catch (err) {
+        console.error(err);
+        alert("❌ Upload failed: " + err.message);
+      } finally {
+        uploadBtn.textContent = "Upload";
+        uploadBtn.disabled = false;
       }
-
-      const { data: publicUrlData } = supabase
-        .storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(fileName);
-
-      const fileUrl = publicUrlData.publicUrl;
-
-      // Save record in Supabase table
-      await supabase.from("medical_history").insert([
-        {
-          file_name: file.name,
-          file_url: fileUrl,
-          description: description,
-          uploaded_at: new Date()
-        }
-      ]);
-
-      alert("✅ File uploaded successfully!");
-      fileInput.value = "";
-      description.value = "";
-      loadReports();
     }
 
     async function loadReports() {
-      const { data, error } = await supabase
-        .from("medical_history")
-        .select("*")
-        .order("uploaded_at", { ascending: false });
+      const reportList = document.getElementById('reportList');
+      reportList.innerHTML = '<div style="text-align:center;padding:20px;">Loading reports...</div>';
 
-      const list = document.getElementById("reportList");
-      list.innerHTML = "";
+      const doctorFilter = document.getElementById('filterDoctor').value.trim();
+      const dateFilter = document.getElementById('filterDate').value;
+      const typeFilter = document.getElementById('filterType').value;
 
+      let query = supabase.from('medical_history').select('*').eq('user_id', userId).order('id', { ascending: false });
+
+      const { data, error } = await query;
       if (error) {
-        console.error("Fetch error:", error);
-        list.innerHTML = "<p>Failed to load reports.</p>";
+        reportList.innerHTML = '<div style="color:#e74c3c;text-align:center;">Error loading reports.</div>';
+        console.error(error);
         return;
       }
 
-      if (data.length === 0) {
-        list.innerHTML = "<p>No reports uploaded yet.</p>";
+      reportList.innerHTML = '';
+      const filtered = data.filter(r =>
+        (!doctorFilter || r.doctor.toLowerCase().includes(doctorFilter.toLowerCase())) &&
+        (!dateFilter || r.date === dateFilter) &&
+        (!typeFilter || r.file_type === typeFilter)
+      );
+
+      if (filtered.length === 0) {
+        reportList.innerHTML = '<div style="text-align:center;color:#666;">No reports found.</div>';
         return;
       }
 
-      data.forEach((r) => {
-        const div = document.createElement("div");
-        div.className = "report-card";
+      filtered.forEach(report => {
+        const div = document.createElement('div');
+        div.className = 'report-card';
+        const thumbnail = report.file_type === "image"
+          ? `<img src="${report.file_url}" class="thumbnail">`
+          : `<img src="https://cdn-icons-png.flaticon.com/512/337/337946.png" class="thumbnail">`;
+
         div.innerHTML = `
-          <strong>${r.file_name}</strong><br>
-          <small>${r.description}</small><br>
-          <a href="${r.file_url}" target="_blank">View Report</a>
+          ${thumbnail}
+          <input type="text" value="${report.title}" onchange="updateField(${report.id}, 'title', this.value)">
+          <textarea onchange="updateField(${report.id}, 'description', this.value)">${report.description}</textarea>
+          <p><strong>Doctor:</strong> ${report.doctor}</p>
+          <p><strong>Date:</strong> ${report.date}</p>
+          <a href="${report.file_url}" target="_blank" style="color:#00796b;text-decoration:none;">📄 View File</a>
+          <div class="actions">
+            <button onclick="deleteReport(${report.id}, '${report.file_url}')">Delete</button>
+          </div>
         `;
-        list.appendChild(div);
+        reportList.appendChild(div);
       });
     }
 
+    async function updateField(id, field, value) {
+      const { error } = await supabase.from('medical_history').update({ [field]: value }).eq('id', id);
+      if (error) alert("❌ Update failed: " + error.message);
+    }
+
+    async function deleteReport(id, fileUrl) {
+      if (!confirm("Are you sure you want to delete this report?")) return;
+
+      try {
+        const fileName = fileUrl.split('/').slice(-1)[0];
+        await supabase.storage.from('medical_reports').remove([`reports/${userId}/${fileName}`]);
+        await supabase.from('medical_history').delete().eq('id', id);
+        alert("🗑️ Report deleted successfully!");
+        loadReports();
+      } catch (err) {
+        alert("❌ Delete failed: " + err.message);
+      }
+    }
+
+    function clearFilters() {
+      document.getElementById('filterDoctor').value = '';
+      document.getElementById('filterDate').value = '';
+      document.getElementById('filterType').value = '';
+      loadReports();
+    }
+
+    function clearForm() {
+      document.getElementById('title').value = '';
+      document.getElementById('description').value = '';
+      document.getElementById('doctor').value = '';
+      document.getElementById('reportDate').value = '';
+      document.getElementById('fileInput').value = '';
+    }
+
+    // Make global functions accessible
+    window.updateField = updateField;
+    window.deleteReport = deleteReport;
+
+    // Auto-load
     loadReports();
   </script>
 </body>
